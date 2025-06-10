@@ -1,67 +1,147 @@
 # 2025June
-# 9th June 【Class 1 - python基础】
+# 10th June 【Class 1 - python基础】
 
-## 1. 环境准备
-### 检查Python版本
-python --version
-### 创建并激活虚拟环境
-python -m venv myenv
-### Windows
-myenv\Scripts\activate
-### Linux/Mac
-source myenv/bin/activate
-### 安装第三方库
-pip install requests
+## 深度学习基础
+### 完整训练流程
+https://www.notion.so/image/attachment%3A42b0a0a2-895c-4b83-85c3-268d79fdf5d5%3Aimage.png?table=block&id=20e29eab-a1c3-8061-9897-f1bd8e25005f&spaceId=97729eab-a1c3-8187-80d1-0003658bd405&width=1390&userId=2a179900-5e0c-4e10-ad47-d81894bac624&cache=v2![image](https://github.com/user-attachments/assets/ad70f542-4717-47c9-9107-fa01148f97d6)
 
-## 2. 变量、变量类型、作用域
-- 基本变量类型：`int`、`float`、`str`、`bool`、`list`、`tuple`、`dict`、`set`。
-- 作用域：全局变量、局部变量，`global` 和 `nonlocal` 关键字。
-- 类型转换：如 `int()`、`str()`。
+- 欠拟合：训练训练数据集表现不好，验证表现不好
+- 过拟合：训练数据训练过程表现得很好，在我得验证过程表现不好
+
+### 卷积神经网络
+```python
+import torch
+import torch.nn.functional as F
+input = torch.tensor([[1,2,0,3,1],
+                      [0,1,2,3,1],
+                      [1,2,1,0,0],
+                      [5,2,3,1,1],
+                      [2,1,0,1,1]])
+kernel = torch.tensor([[1,2,1],
+                       [0,1,0],
+                       [2,1,0]])
+
+# 不满足conv2d的尺寸要求
+print(input.shape)
+print(kernel.shape)
+
+# 尺寸变换
+input = torch.reshape(input,(1,1,5,5))
+kernel = torch.reshape(kernel,(1,1,3,3))
+print(input.shape)
+print(kernel.shape)
+
+output = F.conv2d(input=input,weight=kernel,stride=1)
+print(output)
+
+output2 = F.conv2d(input=input,weight=kernel,stride=2)
+print(output2)
+
+# padding 在周围扩展一个像素，默认为0；
+output3 = F.conv2d(input=input,weight=kernel,stride=1,padding=1)
+print(output3)
+```
+### 图片卷积
+```python
+import torch
+import torchvision
+from torch.utils.data import DataLoader
+from torch import nn
+from torch.utils.tensorboard import SummaryWriter
+
+dataset = torchvision.datasets.CIFAR10(root="./dataset_chen",
+                                       train=False,
+                                       transform=torchvision.transforms.ToTensor(),
+                                       download=True)
+dataloader = DataLoader(dataset=dataset,
+                        batch_size=64)
 
 
-## 3. 运算符及表达式
-- 算术运算符：`+`, , , `/`, `//`, `%`, `*`。
-- 比较运算符：`==`, `!=`, `>`, `<`, `>=`, `<=`。
-- 逻辑运算符：`and`, `or`, `not`。
-- 位运算符：`&`, `|`, `^`, `<<`, `>>`。
+class CHEN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels=3,
+                               out_channels=6,
+                               kernel_size=3,
+                               stride=1,
+                               padding=0)
 
-## 4. 语句：条件、循环、异常
-- 条件语句：`if`, `elif`, `else`。
-- 循环语句：`for`, `while`, `break`, `continue`。
-- 异常处理：`try`, `except`, `finally`。
+    def forward(self, x):
+        x = self.conv1(x)
+        return x
 
-## 5. 函数：定义、参数、匿名函数、高阶函数
-- 函数定义：`def`关键字，默认参数，可变参数（`args`, `*kwargs`）。
-- 匿名函数：`lambda`。
-- 高阶函数：接受函数作为参数或返回函数。
 
-## 6. 包和模块：定义模块、导入模块、使用模块、第三方模块
-- 模块：`import`语句，`from ... import ...`。
-- 创建模块：一个`.py`文件。
-- 包：包含`__init__.py`的文件夹。
-- 第三方模块：如`requests`, `numpy`。
+chen = CHEN()
+print(chen)
 
-## 7. 类和对象
-- 类定义：`class`关键字，属性和方法。
-- 继承、多态、封装。
-- 实例化对象。
+writer = SummaryWriter("conv_logs")
+step = 0
+for data in dataloader:
+    imgs, targets = data
+    output = chen(imgs)
 
-## 8. 装饰器
-- 装饰器本质：高阶函数，接受函数并返回新函数。
-- 使用`@`语法。
-- 带参数的装饰器。
+    # print(imgs.shape)  # torch.Size([64, 3, 32, 32])
+    # print(output.shape)  # torch.Size([64, 6, 30, 30])
+    writer.add_images("input", imgs, step)
 
-## 9. 文件操作
-- 读写文本文件：`open()`, `read()`, `write()`。
-- 上下文管理器：`with`语句。
-- 处理CSV、JSON文件。
+    # torch.Size([64, 6, 30, 30]) ->([**, 3, 30, 30])
+    output = torch.reshape(output, (-1, 3, 30, 30))  # -1:会根据后面的值进行调整
+    writer.add_images("output", output, step)
+    step += 1
 
-# 10. git命令操作
-- git init 初始化仓库
-- git add . 添加到暂存
-- git commit -m “” 
-- git remote add origin ”“
-- git pull --rebase origin main 
-- git push origin main
-- git config —global [user.name](http://user.name) “”
-- git config —global user.email
+定义我们的网络模型
+```
+### tensorboard的使用
+tensorboard --logdir=conv_logs
+### 池化层
+```python
+import torch
+import torchvision
+from torch import nn
+from torch.nn import MaxPool2d
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+#
+dataset = torchvision.datasets.CIFAR10(root="./dataset_chen",
+                                       train=False,
+                                       transform=torchvision.transforms.ToTensor(),
+                                       download=True)
+dataloader = DataLoader(dataset=dataset,
+                        batch_size=64)
+
+# # 最大池化没法对long整形进行池化
+# input = torch.tensor([[1,2,0,3,1],
+#                       [0,1,2,3,1],
+#                       [1,2,1,0,0],
+#                       [5,2,3,1,1],
+#                       [2,1,0,1,1]], dtype = torch.float)
+# input =torch.reshape(input,(-1,1,5,5))
+# print(input.shape)
+
+
+class Chen(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.maxpool_1 = MaxPool2d(kernel_size=3,
+                                   ceil_mode=False)
+    def forward(self,input):
+        output = self.maxpool_1(input)
+        return output
+
+chen = Chen()
+
+writer = SummaryWriter("maxpool_logs")
+step = 0
+for data in dataloader:
+    imgs, targets = data
+    writer.add_images("input",imgs,step)
+    output = chen(imgs)
+    writer.add_images("ouput",output,step)
+    step += 1
+writer.close()
+
+#
+# output = chen(input)
+# print(output)
+```
+
