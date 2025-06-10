@@ -14,3 +14,9 @@
 - 9. 文件操作
 - 10. git命令操作
 - 11. conda环境基本操作
+
+### 10th June 【Class 2 - 深度学习基础】
+- 卷积神经网络
+- tensorboard
+- 池化层
+- AlexNet
